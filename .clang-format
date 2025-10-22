@@ -1,0 +1,38 @@
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+# Braces
+BreakBeforeBraces: Stroustrup
+AllowShortFunctionsOnASingleLine: Inline
+
+# Pointers & references
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Line length
+ColumnLimit: 160
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# Other
+AlignAfterOpenBracket: Align
+AllowShortIfStatementsOnASingleLine: false
+
+NamespaceIndentation: All
+FixNamespaceComments: false
+
+IncludeCategories:
+  - Regex: '^<([a-zA-Z0-9_/]+)>$'
+    Priority: 1   # Standards
+  - Regex: '^<.*\.h>$'
+    Priority: 2   # Third-party
+  - Regex: '^".*"$'
+    Priority: 3   # Project
+
