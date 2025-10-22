@@ -5,6 +5,7 @@
 
 #include "priority.h"
 #include "sync/signal.h"
+#include "threadlet/pool.h"
 #include "utils/uuid.h"
 
 namespace threadlet {
@@ -14,6 +15,9 @@ namespace threadlet {
       private:
         uuids::uuid id_;
         priority priority_;
+
+        // TODO: impl urgency (uint8_t)
+        // TODO: impl deadline (std::chrono::steady_clock::time_point)
 
         callable callable_;
         std::shared_ptr<sync::signal> signal_;
@@ -32,13 +36,17 @@ namespace threadlet {
             return t->schedule();
         }
 
+        priority priority() const { return priority_; }
+        uint8_t urgency() const { return 1; }
+
       private:
         std::future<R> schedule()
         {
             auto promise = std::make_shared<std::promise<R>>();
             auto t = this->shared_from_this(); // Keep object alive
 
-            // TODO: enqueue into thread pool
+            // TODO:
+            pool::global().enqueue([t, promise]() { t->perform(promise); });
 
             return promise->get_future();
         }
