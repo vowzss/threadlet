@@ -6,27 +6,27 @@
 #include <thread>
 #include <vector>
 
-#include "threadlet/types.h"
+#include "threadlet/types/runnable.h"
 
 namespace threadlet {
     class pool {
-
-      private:
-        std::vector<std::thread> workers_;
-        std::priority_queue<runnable, std::vector<runnable>, utils::task_comparator> tasks_;
-
-        std::mutex mutex_;
-        std::condition_variable cv_;
-        bool shutdown_ = false;
+        template <typename F> friend class task;
 
       public:
-        static pool& global()
+        static pool& instance()
         {
             static pool instance;
             return instance;
         }
 
-      public:
+      private:
+        std::vector<std::thread> workers_;
+        std::priority_queue<std::shared_ptr<types::runnable>> jobs_;
+
+        std::mutex mutex_;
+        std::condition_variable cv_;
+        bool shutdown_ = false;
+
         explicit pool(size_t n = std::thread::hardware_concurrency())
         {
             for (size_t i = 0; i < n; ++i) {
@@ -48,38 +48,33 @@ namespace threadlet {
             }
         }
 
-        template <typename F> runnable enqueue(F&& f, priority priority)
+        void enqueue(std::shared_ptr<types::runnable> job)
         {
-            auto wrapper = [f = std::forward<F>(f)]() mutable { f(); };
-            runnable r = std::make_shared<task<void>>(std::move(wrapper), priority, 1);
-
             {
                 std::lock_guard<std::mutex> lock(mutex_);
-                tasks_.emplace(r);
+                jobs_.emplace(std::move(job));
             }
 
             cv_.notify_one();
-            return r;
         }
 
-      private:
         void process()
         {
             while (!shutdown_) {
-                runnable r;
+                std::shared_ptr<types::runnable> job;
 
                 {
                     std::unique_lock<std::mutex> lock(mutex_);
-                    cv_.wait(lock, [&] { return shutdown_ || !tasks_.empty(); });
+                    cv_.wait(lock, [&] { return shutdown_ || !jobs_.empty(); });
 
-                    if (shutdown_ && tasks_.empty())
+                    if (shutdown_ && jobs_.empty())
                         return;
 
-                    r = tasks_.top();
-                    tasks_.pop();
+                    job = jobs_.top();
+                    jobs_.pop();
                 }
 
-                // r.callable();
+                job->execute();
             }
         }
     };
