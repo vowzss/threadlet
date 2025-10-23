@@ -1,70 +1,41 @@
 #pragma once
 
-#include <functional>
 #include <future>
 
-#include "priority.h"
-#include "sync/signal.h"
 #include "threadlet/pool.h"
-#include "utils/uuid.h"
+#include "threadlet/sync/signal.h"
 
 namespace threadlet {
-    template <typename R, typename... Args> class task final : public std::enable_shared_from_this<task<R, Args...>> {
-        using callable = std::function<R(Args...)>;
-
-      private:
-        uuids::uuid id_;
-        priority priority_;
-
-        // TODO: impl urgency (uint8_t)
-        // TODO: impl deadline (std::chrono::steady_clock::time_point)
-
-        callable callable_;
-        std::shared_ptr<sync::signal> signal_;
-
-      private:
-        task(callable callable, priority priority, std::shared_ptr<sync::signal> signal)
-            : id_(utils::uuid()), priority_(priority), callable_(std::move(callable)), signal_(std::move(signal))
-        {
-        }
+    template <typename F> class task final : public types::runnable {
+        using R = std::invoke_result_t<F>;
 
       public:
-        static std::future<R> run(callable callable, priority priority = priority::MEDIUM,
-                                  std::shared_ptr<sync::signal> signal = std::make_shared<sync::signal>())
+        static inline std::future<R> run(F&& job, priority level = priority::MEDIUM, uint8_t urgency = 1, std::shared_ptr<sync::signal> signal = nullptr)
         {
-            auto t = std::make_shared<task>(callable, priority, signal);
-            return t->schedule();
+            auto self = std::make_shared<task<F>>(std::forward<F>(job), level, urgency, signal);
+            auto future = self->job_.get_future();
+
+            pool::instance().enqueue(self);
+
+            return future;
         }
 
-        priority priority() const { return priority_; }
-        uint8_t urgency() const { return 1; }
+        void execute() override { job_(); }
 
       private:
-        std::future<R> schedule()
+        std::packaged_task<R()> job_;
+
+        std::shared_ptr<sync::signal> signal_;
+        // TODO: impl deadline (std::chrono::steady_clock::time_point)
+
+        task(F&& job, priority level, uint8_t urgency, std::shared_ptr<sync::signal> signal)
+            : runnable(level, urgency), job_(std::forward<F>(job)), signal_(std::move(signal))
         {
-            auto promise = std::make_shared<std::promise<R>>();
-            auto t = this->shared_from_this(); // Keep object alive
-
-            // TODO:
-            pool::global().enqueue([t, promise]() { t->perform(promise); });
-
-            return promise->get_future();
         }
 
-        void perform(std::shared_ptr<std::promise<R>> promise)
-        {
-            try {
-                if constexpr (std::is_void_v<R>) {
-                    callable_();
-                    promise->set_value();
-                }
-                else {
-                    promise->set_value(callable_());
-                }
-            }
-            catch (...) {
-                promise->set_exception(std::current_exception());
-            }
-        }
+        task(const task&) = delete;
+        task& operator=(const task&) = delete;
+
+        ~task() = default;
     };
 }
