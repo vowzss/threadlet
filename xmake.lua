@@ -13,7 +13,7 @@ add_requires("conan::doctest/2.4.12", {alias = "doctest"})
 
 -- Library
 target("threadlet")
-    set_kind("static")
+    set_kind("headeronly")
     set_basename("threadlet")
 
     -- Headers files
