@@ -9,8 +9,8 @@
 #include "threadlet/types/runnable.h"
 
 namespace threadlet {
+
     class pool {
-        template <typename F> friend class task;
 
       public:
         static pool& instance()
@@ -20,8 +20,10 @@ namespace threadlet {
         }
 
       private:
+        template <typename F> friend class task_impl;
+
         std::vector<std::thread> workers_;
-        std::priority_queue<std::shared_ptr<types::runnable>> jobs_;
+        std::priority_queue<std::shared_ptr<types::runnable>, std::vector<std::shared_ptr<types::runnable>>, types::runnable::comparator> jobs_;
 
         std::mutex mutex_;
         std::condition_variable cv_;

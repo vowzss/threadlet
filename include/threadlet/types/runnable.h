@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "threadlet/priority.h"
 
 namespace threadlet::types {
@@ -14,10 +16,14 @@ namespace threadlet::types {
 
         virtual void execute() = 0;
 
+        struct comparator {
+            bool operator()(const std::shared_ptr<types::runnable>& a, const std::shared_ptr<types::runnable>& b) const { return *a < *b; }
+        };
+
         bool operator<(const runnable& other) const
         {
             if (level_ != other.level_)
-                return level_ > other.level_;
+                return level_ < other.level_;
 
             return urgency_ < other.urgency_;
         }
