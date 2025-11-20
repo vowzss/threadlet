@@ -1,38 +1,57 @@
 BasedOnStyle: LLVM
 
-# Indentation
+# indentation
+# =========================
+IndentPPDirectives: BeforeHash
 IndentWidth: 4
-TabWidth: 4
-UseTab: Never
 ContinuationIndentWidth: 4
+IndentCaseLabels: true
+UseTab: Never
 
-# Braces
-BreakBeforeBraces: Stroustrup
-AllowShortFunctionsOnASingleLine: Inline
+ColumnLimit: 150
 
-# Pointers & references
+# pointers & references
+# =========================
 DerivePointerAlignment: false
 PointerAlignment: Left
 
-# Line length
-ColumnLimit: 160
-
-# Includes
+# includes
+# =========================
 SortIncludes: true
 IncludeBlocks: Regroup
+IncludeCategories:
+  # standard library
+  - Regex: '^<([a-zA-Z0-9_\/]+)>$'
+    Priority: 1
 
-# Other
+  # third-party headers
+  - Regex: "^<.*.(h|hpp)>$"
+    Priority: 2
+
+  # project headers
+  - Regex: '^threadlet\/.*$'
+    Priority: 3
+
+# alignment
+# =========================
 AlignAfterOpenBracket: Align
-AllowShortIfStatementsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowAllArgumentsOnNextLine: false
 
+AlwaysBreakTemplateDeclarations: Yes
+AlwaysBreakBeforeMultilineStrings: false
+
+# braces
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterControlStatement: true
+
+# short constructs
+# =========================
+AllowShortBlocksOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: true
+
+# namespaces
+# =========================
 NamespaceIndentation: All
 FixNamespaceComments: false
-
-IncludeCategories:
-  - Regex: '^<([a-zA-Z0-9_/]+)>$'
-    Priority: 1   # Standards
-  - Regex: '^<.*\.h>$'
-    Priority: 2   # Third-party
-  - Regex: '^".*"$'
-    Priority: 3   # Project
-

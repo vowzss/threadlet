@@ -1,57 +1,54 @@
--- Project settings
+-- project metadata
 set_project("threadlet")
 set_version("1.0.0")
 set_languages("cxx17")
 
--- Build modes
+-- build modes
 add_rules("mode.debug", "mode.release")
 
--- Dependencies
+-- build settings
+if is_mode("debug") then
+    set_symbols("debug")
+    set_optimize("none")
+else
+    set_symbols("hidden")
+    set_optimize("fastest")
+end
+
+-- dependencies
 add_requires("conan::stduuid/1.2.3", {alias = "stduuid"})
 add_requires("conan::spdlog/1.16.0", {alias = "spdlog"})
 add_requires("conan::doctest/2.4.12", {alias = "doctest"})
 
--- Library
+-- core target
 target("threadlet")
     set_kind("headeronly")
-    set_basename("threadlet")
+    set_filename("threadlet")
 
-    -- Headers files
+    -- headers
+    add_headerfiles("include/threadlet/(**.h)")
     add_includedirs("include", {public = true})
-    add_headerfiles("include/(**.h)")
     
-    -- Link dependencies
+    -- sources
     add_packages("stduuid", "spdlog")
 
-    -- Threading support (POSIX)
+    -- threading support (POSIX)
     if is_plat("linux", "macosx") then
         add_syslinks("pthread")
     end
-
-    -- Build modes
-    if is_mode("debug") then
-        set_symbols("debug")
-        set_optimize("none")
-    else
-        set_symbols("hidden")
-        set_optimize("fastest")
-    end
 target_end()
 
--- Unit tests
+-- test target
 target("threadlet_tests")
     set_kind("binary")
+    set_rundir("$(projectdir)/tests")
+
+    -- link
     add_deps("threadlet")
 
-    add_files("tests/**.cpp")
-
+    -- dependencies
     add_packages("stduuid", "spdlog", "doctest")
 
-    set_rundir("$(projectdir)/tests")
+    -- sources
+    add_files("tests/*.cpp")
 target_end()
-
--- Cleanup task
-task("clean")
-    on_run(function ()
-        os.rm("build")
-    end)
